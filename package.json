@@ -13,7 +13,7 @@
     "benchmark": "tsx loadtest/benchmark.ts",
     "test": "vitest run",
     "test:watch": "vitest",
-    "build": "tsc",
+    "build": "node ./node_modules/typescript/bin/tsc",
     "lint": "tsc --noEmit"
   },
   "dependencies": {
