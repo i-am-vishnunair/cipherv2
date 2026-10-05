@@ -1,0 +1,46 @@
+{
+  "published": {
+    "total": 29,
+    "byType": {
+      "sitemap": 6,
+      "page": 9,
+      "mixed": 8,
+      "rss": 6
+    }
+  },
+  "stats": {
+    "competitors": {
+      "total": 100,
+      "online": 0,
+      "offline": 0,
+      "degraded": 100,
+      "analyzing": 0
+    },
+    "articles": {
+      "total": 0,
+      "avgDelay": null,
+      "minDelay": null,
+      "maxDelay": null,
+      "within5min": 0,
+      "totalWithDelay": 0,
+      "within5minPct": 0,
+      "avgDelayFormatted": "N/A – publish time unavailable",
+      "minDelayFormatted": "N/A – publish time unavailable",
+      "maxDelayFormatted": "N/A – publish time unavailable"
+    },
+    "checks": {
+      "total": 0,
+      "failed": 0,
+      "timeouts": 0,
+      "checksPerMinute": 0
+    },
+    "engine": {
+      "running": false,
+      "activeChecks": 0,
+      "queueDepth": 100,
+      "checksPerMinute": 0,
+      "cycleNumber": 0,
+      "perHostActive": {}
+    }
+  }
+}

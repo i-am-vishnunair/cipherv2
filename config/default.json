@@ -1,0 +1,43 @@
+{
+  "port": 3000,
+  "demoSitesPort": 4000,
+  "dbPath": "./data/cipher.db",
+  "logLevel": "info",
+  "monitoring": {
+    "globalConcurrency": 20,
+    "perHostConcurrency": 2,
+    "defaultPollIntervalMs": 60000,
+    "minPollIntervalMs": 30000,
+    "maxPollIntervalMs": 900000,
+    "requestTimeoutMs": 10000,
+    "connectTimeoutMs": 5000,
+    "maxResponseSizeBytes": 5242880,
+    "maxRequestsPerSecond": 50,
+    "circuitBreakerThreshold": 5,
+    "circuitBreakerRecoveryMs": 300000,
+    "adaptivePolling": true,
+    "respectRobotsTxt": true,
+    "userAgent": "CipherBot/1.0 (+https://github.com/cipher-blog-spy; monitoring)"
+  },
+  "smtp": {
+    "enabled": false,
+    "host": "",
+    "port": 587,
+    "secure": false,
+    "user": "",
+    "pass": "",
+    "from": "cipher@example.com",
+    "to": "admin@example.com"
+  },
+  "publishing": {
+    "enabled": false,
+    "webhookUrl": "",
+    "wpUrl": "",
+    "wpUser": "",
+    "wpAppPassword": ""
+  },
+  "retention": {
+    "checksMaxAgeDays": 90,
+    "articlesMaxAgeDays": 0
+  }
+}

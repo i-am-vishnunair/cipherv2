@@ -1,0 +1,859 @@
+<!DOCTYPE html>
+<html lang="en" class="dark">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Cipher — Competitor Blog Spy</title>
+  <meta name="description" content="Real-time competitor content monitoring and detection system">
+  <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --bg-primary: #0f0f23;
+      --bg-secondary: #1a1a3e;
+      --bg-card: #1e1e42;
+      --bg-hover: #252552;
+      --text-primary: #e2e8f0;
+      --text-secondary: #94a3b8;
+      --accent: #6366f1;
+      --accent-light: #818cf8;
+      --success: #10b981;
+      --warning: #f59e0b;
+      --danger: #ef4444;
+      --info: #3b82f6;
+    }
+    * { font-family: 'Inter', sans-serif; }
+    body { background: var(--bg-primary); color: var(--text-primary); margin: 0; }
+
+    /* Glassmorphism cards */
+    .glass-card {
+      background: rgba(30, 30, 66, 0.7);
+      backdrop-filter: blur(12px);
+      border: 1px solid rgba(99, 102, 241, 0.15);
+      border-radius: 16px;
+      padding: 24px;
+      transition: all 0.3s ease;
+    }
+    .glass-card:hover { border-color: rgba(99, 102, 241, 0.3); transform: translateY(-1px); }
+
+    /* Gradient text */
+    .gradient-text {
+      background: linear-gradient(135deg, #6366f1, #8b5cf6, #a78bfa);
+      -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+    }
+
+    /* Sidebar */
+    .sidebar {
+      background: rgba(15, 15, 35, 0.95);
+      backdrop-filter: blur(20px);
+      border-right: 1px solid rgba(99, 102, 241, 0.1);
+      width: 260px; min-height: 100vh; position: fixed; left: 0; top: 0; z-index: 50;
+    }
+    .sidebar-link {
+      display: flex; align-items: center; gap: 12px; padding: 12px 20px;
+      color: var(--text-secondary); text-decoration: none; transition: all 0.2s;
+      border-radius: 8px; margin: 2px 12px; font-size: 14px; font-weight: 500;
+    }
+    .sidebar-link:hover, .sidebar-link.active {
+      background: rgba(99, 102, 241, 0.15); color: var(--accent-light);
+    }
+    .sidebar-link.active { border-left: 3px solid var(--accent); }
+
+    .main-content { margin-left: 260px; padding: 24px 32px; min-height: 100vh; }
+
+    /* Status badges */
+    .badge { padding: 3px 10px; border-radius: 999px; font-size: 11px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px; }
+    .badge-online { background: rgba(16, 185, 129, 0.15); color: #10b981; }
+    .badge-offline { background: rgba(239, 68, 68, 0.15); color: #ef4444; }
+    .badge-degraded { background: rgba(245, 158, 11, 0.15); color: #f59e0b; }
+    .badge-analyzing { background: rgba(99, 102, 241, 0.15); color: #6366f1; }
+    .badge-ok { background: rgba(16, 185, 129, 0.15); color: #10b981; }
+    .badge-over5min { background: rgba(239, 68, 68, 0.15); color: #ef4444; }
+    .badge-unknown { background: rgba(107, 114, 128, 0.15); color: #6b7280; }
+
+    /* KPI cards */
+    .kpi-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 16px; margin-bottom: 24px; }
+    .kpi-card { text-align: center; }
+    .kpi-value { font-size: 32px; font-weight: 800; margin: 8px 0 4px; }
+    .kpi-label { font-size: 12px; color: var(--text-secondary); text-transform: uppercase; letter-spacing: 1px; }
+
+    /* Table */
+    .data-table { width: 100%; border-collapse: separate; border-spacing: 0; }
+    .data-table th {
+      text-align: left; padding: 12px 16px; font-size: 11px; text-transform: uppercase;
+      letter-spacing: 1px; color: var(--text-secondary); border-bottom: 1px solid rgba(99, 102, 241, 0.1);
+      font-weight: 600; position: sticky; top: 0; background: var(--bg-primary);
+    }
+    .data-table td {
+      padding: 12px 16px; font-size: 13px; border-bottom: 1px solid rgba(255,255,255,0.03);
+      transition: background 0.15s;
+    }
+    .data-table tr:hover td { background: rgba(99, 102, 241, 0.05); }
+
+    /* Buttons */
+    .btn {
+      padding: 8px 16px; border-radius: 8px; font-size: 13px; font-weight: 600;
+      cursor: pointer; border: none; transition: all 0.2s; display: inline-flex;
+      align-items: center; gap: 6px;
+    }
+    .btn-primary { background: var(--accent); color: white; }
+    .btn-primary:hover { background: var(--accent-light); transform: translateY(-1px); }
+    .btn-sm { padding: 4px 10px; font-size: 11px; }
+    .btn-danger { background: var(--danger); color: white; }
+    .btn-success { background: var(--success); color: white; }
+    .btn-outline {
+      background: transparent; border: 1px solid rgba(99, 102, 241, 0.3); color: var(--accent-light);
+    }
+    .btn-outline:hover { background: rgba(99, 102, 241, 0.1); }
+
+    /* Modal */
+    .modal-overlay {
+      position: fixed; inset: 0; background: rgba(0,0,0,0.6); backdrop-filter: blur(4px);
+      z-index: 100; display: flex; align-items: center; justify-content: center;
+    }
+    .modal { background: var(--bg-card); border-radius: 16px; padding: 32px; min-width: 500px; max-width: 600px; border: 1px solid rgba(99, 102, 241, 0.2); }
+    .modal h2 { margin: 0 0 20px; font-size: 20px; }
+    .form-group { margin-bottom: 16px; }
+    .form-group label { display: block; font-size: 12px; color: var(--text-secondary); margin-bottom: 6px; text-transform: uppercase; letter-spacing: 0.5px; }
+    .form-input {
+      width: 100%; padding: 10px 14px; border-radius: 8px; border: 1px solid rgba(99, 102, 241, 0.2);
+      background: var(--bg-primary); color: var(--text-primary); font-size: 14px; box-sizing: border-box;
+    }
+    .form-input:focus { outline: none; border-color: var(--accent); box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.1); }
+
+    /* Toast notification */
+    .toast-container { position: fixed; top: 20px; right: 20px; z-index: 200; display: flex; flex-direction: column; gap: 8px; }
+    .toast {
+      background: var(--bg-card); border: 1px solid rgba(99, 102, 241, 0.3); border-radius: 12px;
+      padding: 14px 20px; min-width: 350px; box-shadow: 0 8px 32px rgba(0,0,0,0.4);
+      animation: slideIn 0.3s ease; display: flex; align-items: flex-start; gap: 12px;
+    }
+    @keyframes slideIn { from { transform: translateX(120%); opacity: 0; } to { transform: translateX(0); opacity: 1; } }
+    @keyframes slideOut { from { transform: translateX(0); opacity: 1; } to { transform: translateX(120%); opacity: 0; } }
+
+    /* Notification bell */
+    .bell-icon { position: relative; cursor: pointer; padding: 8px; }
+    .bell-count {
+      position: absolute; top: 2px; right: 2px; background: var(--danger); color: white;
+      font-size: 10px; font-weight: 700; border-radius: 999px; min-width: 18px; height: 18px;
+      display: flex; align-items: center; justify-content: center;
+    }
+
+    /* Scrollbar */
+    ::-webkit-scrollbar { width: 6px; }
+    ::-webkit-scrollbar-track { background: transparent; }
+    ::-webkit-scrollbar-thumb { background: rgba(99, 102, 241, 0.3); border-radius: 3px; }
+
+    /* Pulse animation for live indicator */
+    .pulse { animation: pulse 2s infinite; }
+    @keyframes pulse {
+      0%, 100% { opacity: 1; }
+      50% { opacity: 0.5; }
+    }
+
+    .hidden { display: none !important; }
+
+    /* Tab views */
+    .tab-content { display: none; }
+    .tab-content.active { display: block; }
+  </style>
+</head>
+<body>
+  <!-- Sidebar -->
+  <nav class="sidebar">
+    <div style="padding: 24px 20px; border-bottom: 1px solid rgba(99,102,241,0.1); margin-bottom: 12px;">
+      <h1 class="gradient-text" style="font-size: 22px; font-weight: 800; margin: 0;">🔍 Cipher</h1>
+      <p style="font-size: 11px; color: var(--text-secondary); margin: 4px 0 0;">Blog Spy Monitor</p>
+    </div>
+    <a href="#" class="sidebar-link active" data-tab="overview">
+      <span>📊</span> Overview
+    </a>
+    <a href="#" class="sidebar-link" data-tab="competitors">
+      <span>🏢</span> Competitors
+    </a>
+    <a href="#" class="sidebar-link" data-tab="articles">
+      <span>📰</span> Articles
+    </a>
+    <a href="#" class="sidebar-link" data-tab="checks">
+      <span>📋</span> Checks / History
+    </a>
+    <a href="#" class="sidebar-link" data-tab="performance">
+      <span>⚡</span> Performance
+    </a>
+    <a href="#" class="sidebar-link" data-tab="settings">
+      <span>⚙️</span> Settings
+    </a>
+    <div style="position: absolute; bottom: 20px; left: 0; right: 0; padding: 0 20px;">
+      <div style="display: flex; align-items: center; gap: 8px; font-size: 12px; color: var(--text-secondary);">
+        <span class="pulse" style="width: 8px; height: 8px; border-radius: 50%; background: var(--success);"></span>
+        <span id="engine-status">Engine: Starting...</span>
+      </div>
+    </div>
+  </nav>
+
+  <!-- Main Content -->
+  <div class="main-content">
+    <!-- Header -->
+    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 24px;">
+      <div>
+        <h2 style="margin: 0; font-size: 24px; font-weight: 700;" id="page-title">Overview</h2>
+        <p style="margin: 4px 0 0; font-size: 13px; color: var(--text-secondary);" id="page-subtitle">Real-time monitoring dashboard</p>
+      </div>
+      <div style="display: flex; align-items: center; gap: 16px;">
+        <div class="bell-icon" id="bell-icon" onclick="toggleNotifications()">
+          <span style="font-size: 20px;">🔔</span>
+          <span class="bell-count hidden" id="bell-count">0</span>
+        </div>
+        <button class="btn btn-primary" id="add-competitor-btn" onclick="showAddModal()">+ Add Competitor</button>
+      </div>
+    </div>
+
+    <!-- Toast Container -->
+    <div class="toast-container" id="toast-container"></div>
+
+    <!-- OVERVIEW TAB -->
+    <div class="tab-content active" id="tab-overview">
+      <div class="kpi-grid">
+        <div class="glass-card kpi-card">
+          <div class="kpi-label">Competitors</div>
+          <div class="kpi-value gradient-text" id="kpi-competitors">0</div>
+          <div style="font-size: 11px; color: var(--text-secondary);" id="kpi-status-summary">-</div>
+        </div>
+        <div class="glass-card kpi-card">
+          <div class="kpi-label">Articles Detected</div>
+          <div class="kpi-value" style="color: var(--info);" id="kpi-articles">0</div>
+          <div style="font-size: 11px; color: var(--text-secondary);" id="kpi-articles-sub">-</div>
+        </div>
+        <div class="glass-card kpi-card">
+          <div class="kpi-label">Avg Detection</div>
+          <div class="kpi-value" style="color: var(--success);" id="kpi-avg-delay">-</div>
+          <div style="font-size: 11px; color: var(--text-secondary);" id="kpi-within-5min">-</div>
+        </div>
+        <div class="glass-card kpi-card">
+          <div class="kpi-label">Fastest</div>
+          <div class="kpi-value" style="color: #10b981;" id="kpi-fastest">-</div>
+          <div style="font-size: 11px; color: var(--text-secondary);">Fastest detection</div>
+        </div>
+        <div class="glass-card kpi-card">
+          <div class="kpi-label">Slowest</div>
+          <div class="kpi-value" style="color: var(--warning);" id="kpi-slowest">-</div>
+          <div style="font-size: 11px; color: var(--text-secondary);">Slowest detection</div>
+        </div>
+        <div class="glass-card kpi-card">
+          <div class="kpi-label">Checks (24h)</div>
+          <div class="kpi-value" style="color: var(--accent-light);" id="kpi-checks">0</div>
+          <div style="font-size: 11px; color: var(--text-secondary);" id="kpi-checks-sub">-</div>
+        </div>
+        <div class="glass-card kpi-card">
+          <div class="kpi-label">Active Workers</div>
+          <div class="kpi-value" style="color: #8b5cf6;" id="kpi-workers">0</div>
+          <div style="font-size: 11px; color: var(--text-secondary);" id="kpi-queue">Queue: 0</div>
+        </div>
+        <div class="glass-card kpi-card">
+          <div class="kpi-label">Checks/min</div>
+          <div class="kpi-value" style="color: #06b6d4;" id="kpi-cpm">0</div>
+          <div style="font-size: 11px; color: var(--text-secondary);">Throughput</div>
+        </div>
+      </div>
+
+      <!-- Recent Articles -->
+      <div class="glass-card" style="margin-top: 16px;">
+        <h3 style="margin: 0 0 16px; font-size: 16px; font-weight: 600;">🆕 Latest Detections</h3>
+        <div style="overflow-x: auto;">
+          <table class="data-table" id="recent-articles-table">
+            <thead>
+              <tr>
+                <th>Source</th>
+                <th>Title</th>
+                <th>Published</th>
+                <th>Detected</th>
+                <th>Delay</th>
+                <th>Method</th>
+              </tr>
+            </thead>
+            <tbody id="recent-articles-body">
+              <tr><td colspan="6" style="text-align: center; color: var(--text-secondary); padding: 40px;">No articles detected yet</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <!-- COMPETITORS TAB -->
+    <div class="tab-content" id="tab-competitors">
+      <div class="glass-card">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px;">
+          <h3 style="margin: 0; font-size: 16px; font-weight: 600;">Monitored Competitors</h3>
+          <button class="btn btn-primary btn-sm" onclick="showAddModal()">+ Add</button>
+        </div>
+        <table class="data-table">
+          <thead>
+            <tr>
+              <th>Name</th>
+              <th>Status</th>
+              <th>Strategy</th>
+              <th>Last Checked</th>
+              <th>Next Check</th>
+              <th>Failures</th>
+              <th>Actions</th>
+            </tr>
+          </thead>
+          <tbody id="competitors-body">
+            <tr><td colspan="7" style="text-align: center; color: var(--text-secondary); padding: 40px;">No competitors added yet</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- ARTICLES TAB -->
+    <div class="tab-content" id="tab-articles">
+      <div class="glass-card">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px;">
+          <h3 style="margin: 0; font-size: 16px; font-weight: 600;">Detected Articles</h3>
+          <div style="display: flex; gap: 8px;">
+            <select class="form-input" style="width: auto; padding: 6px 10px; font-size: 12px;" id="filter-method" onchange="loadArticles()">
+              <option value="">All Methods</option>
+              <option value="rss">RSS</option>
+              <option value="sitemap">Sitemap</option>
+              <option value="page">Page</option>
+              <option value="wp-api">WP API</option>
+            </select>
+            <label style="display: flex; align-items: center; gap: 4px; font-size: 12px; color: var(--text-secondary);">
+              <input type="checkbox" id="filter-over5min" onchange="loadArticles()"> Over 5min
+            </label>
+          </div>
+        </div>
+        <table class="data-table">
+          <thead>
+            <tr>
+              <th>Source</th>
+              <th>Title</th>
+              <th>Published</th>
+              <th>Detected</th>
+              <th>Delay</th>
+              <th>Method</th>
+              <th>Status</th>
+            </tr>
+          </thead>
+          <tbody id="articles-body">
+            <tr><td colspan="7" style="text-align: center; color: var(--text-secondary); padding: 40px;">Loading...</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- CHECKS TAB -->
+    <div class="tab-content" id="tab-checks">
+      <div class="glass-card">
+        <h3 style="margin: 0 0 16px; font-size: 16px; font-weight: 600;">Check History</h3>
+        <table class="data-table">
+          <thead>
+            <tr>
+              <th>Competitor</th>
+              <th>Strategy</th>
+              <th>Time</th>
+              <th>Duration</th>
+              <th>HTTP</th>
+              <th>Result</th>
+              <th>Items</th>
+              <th>New</th>
+              <th>Error</th>
+            </tr>
+          </thead>
+          <tbody id="checks-body">
+            <tr><td colspan="9" style="text-align: center; color: var(--text-secondary); padding: 40px;">Loading...</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- PERFORMANCE TAB -->
+    <div class="tab-content" id="tab-performance">
+      <div class="glass-card" style="margin-bottom: 16px;">
+        <h3 style="margin: 0 0 16px; font-size: 16px; font-weight: 600;">⚡ Method Comparison</h3>
+        <table class="data-table" id="method-comparison">
+          <thead>
+            <tr><th>Method</th><th>Count</th><th>Avg Delay</th><th>Min Delay</th><th>Max Delay</th><th>≤ 5min</th></tr>
+          </thead>
+          <tbody id="method-stats-body">
+            <tr><td colspan="6" style="text-align: center; color: var(--text-secondary);">Loading...</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <div class="glass-card">
+        <h3 style="margin: 0 0 16px; font-size: 16px; font-weight: 600;">📊 Check Performance</h3>
+        <table class="data-table">
+          <thead>
+            <tr><th>Strategy</th><th>Checks</th><th>Avg Duration</th><th>Success Rate</th></tr>
+          </thead>
+          <tbody id="check-perf-body">
+            <tr><td colspan="4" style="text-align: center; color: var(--text-secondary);">Loading...</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- SETTINGS TAB -->
+    <div class="tab-content" id="tab-settings">
+      <div class="glass-card" style="max-width: 600px;">
+        <h3 style="margin: 0 0 20px; font-size: 16px; font-weight: 600;">⚙️ Settings</h3>
+        <div class="form-group">
+          <label>Global Concurrency</label>
+          <input type="number" class="form-input" id="setting-concurrency" value="20">
+        </div>
+        <div class="form-group">
+          <label>Default Poll Interval (ms)</label>
+          <input type="number" class="form-input" id="setting-interval" value="60000">
+        </div>
+        <div class="form-group">
+          <label>Request Timeout (ms)</label>
+          <input type="number" class="form-input" id="setting-timeout" value="10000">
+        </div>
+        <div class="form-group">
+          <label>SMTP Host</label>
+          <input type="text" class="form-input" id="setting-smtp-host" placeholder="smtp.gmail.com">
+        </div>
+        <button class="btn btn-primary" onclick="saveSettings()">Save Settings</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Add Competitor Modal -->
+  <div class="modal-overlay hidden" id="add-modal">
+    <div class="modal">
+      <h2 class="gradient-text">Add Competitor</h2>
+      <p style="font-size: 13px; color: var(--text-secondary); margin: -12px 0 20px;">Just enter a URL — we'll figure out the rest.</p>
+      <div class="form-group">
+        <label>Name</label>
+        <input type="text" class="form-input" id="competitor-name" placeholder="e.g. TechCrunch">
+      </div>
+      <div class="form-group">
+        <label>Website URL</label>
+        <input type="text" class="form-input" id="competitor-url" placeholder="https://techcrunch.com">
+      </div>
+      <div class="form-group">
+        <label>Blog URL (optional)</label>
+        <input type="text" class="form-input" id="competitor-blog-url" placeholder="Leave empty for auto-discovery">
+      </div>
+      <div class="form-group">
+        <label>Feed URL (optional)</label>
+        <input type="text" class="form-input" id="competitor-feed-url" placeholder="Leave empty for auto-discovery">
+      </div>
+      <div style="display: flex; gap: 12px; justify-content: flex-end; margin-top: 24px;">
+        <button class="btn btn-outline" onclick="hideAddModal()">Cancel</button>
+        <button class="btn btn-primary" onclick="addCompetitor()">Add & Analyze</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Notification Panel -->
+  <div class="hidden" id="notification-panel" style="position: fixed; top: 60px; right: 20px; z-index: 150; width: 400px; max-height: 500px; overflow-y: auto;">
+    <div class="glass-card" style="padding: 16px;">
+      <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;">
+        <h4 style="margin: 0; font-size: 14px;">Notifications</h4>
+        <button class="btn btn-sm btn-outline" onclick="markAllRead()">Mark all read</button>
+      </div>
+      <div id="notification-list" style="font-size: 13px;">
+        <p style="color: var(--text-secondary); text-align: center;">No notifications</p>
+      </div>
+    </div>
+  </div>
+
+<script>
+// ─── State ─────────────────────────────────────────
+let currentTab = 'overview';
+let refreshInterval = null;
+
+// ─── Tab Navigation ─────────────────────────────────────────
+document.querySelectorAll('.sidebar-link[data-tab]').forEach(link => {
+  link.addEventListener('click', (e) => {
+    e.preventDefault();
+    const tab = link.dataset.tab;
+    switchTab(tab);
+  });
+});
+
+function switchTab(tab) {
+  currentTab = tab;
+  document.querySelectorAll('.sidebar-link').forEach(l => l.classList.remove('active'));
+  document.querySelector(`[data-tab="${tab}"]`)?.classList.add('active');
+  document.querySelectorAll('.tab-content').forEach(t => t.classList.remove('active'));
+  document.getElementById(`tab-${tab}`)?.classList.add('active');
+
+  const titles = {
+    overview: ['Overview', 'Real-time monitoring dashboard'],
+    competitors: ['Competitors', 'Manage monitored websites'],
+    articles: ['Articles', 'Detected articles with intelligence'],
+    checks: ['Checks / History', 'Full monitoring log'],
+    performance: ['Performance', 'Method comparison and metrics'],
+    settings: ['Settings', 'Global configuration'],
+  };
+  document.getElementById('page-title').textContent = titles[tab]?.[0] || tab;
+  document.getElementById('page-subtitle').textContent = titles[tab]?.[1] || '';
+
+  loadTabData(tab);
+}
+
+function loadTabData(tab) {
+  if (tab === 'overview') loadOverview();
+  if (tab === 'competitors') loadCompetitors();
+  if (tab === 'articles') loadArticles();
+  if (tab === 'checks') loadChecks();
+  if (tab === 'performance') loadPerformance();
+}
+
+// ─── API Helpers ─────────────────────────────────────────
+async function api(path, options = {}) {
+  const resp = await fetch(`/api${path}`, {
+    headers: { 'Content-Type': 'application/json' },
+    ...options,
+    body: options.body ? JSON.stringify(options.body) : undefined,
+  });
+  return resp.json();
+}
+
+function formatDate(iso) {
+  if (!iso) return '-';
+  try {
+    const d = new Date(iso);
+    return d.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' }) +
+      ' ' + d.toLocaleDateString([], { month: 'short', day: 'numeric' });
+  } catch { return iso; }
+}
+
+function formatMs(ms) {
+  if (ms == null) return '-';
+  if (ms < 1000) return ms + 'ms';
+  if (ms < 60000) return (ms / 1000).toFixed(1) + 's';
+  if (ms < 3600000) return Math.floor(ms / 60000) + 'm ' + Math.floor((ms % 60000) / 1000) + 's';
+  return Math.floor(ms / 3600000) + 'h ' + Math.floor((ms % 3600000) / 60000) + 'm';
+}
+
+function delayBadge(flag, formatted) {
+  if (!flag || flag === 'unknown_publish_time') return `<span class="badge badge-unknown">${formatted || 'N/A'}</span>`;
+  if (flag === 'ok') return `<span class="badge badge-ok">${formatted}</span>`;
+  return `<span class="badge badge-over5min">⚠ ${formatted}</span>`;
+}
+
+function statusBadge(status) {
+  return `<span class="badge badge-${status}">${status}</span>`;
+}
+
+// ─── Overview ─────────────────────────────────────────
+async function loadOverview() {
+  try {
+    const stats = await api('/stats/overview');
+    document.getElementById('kpi-competitors').textContent = stats.competitors?.total || 0;
+    document.getElementById('kpi-status-summary').textContent =
+      `${stats.competitors?.online || 0} online, ${stats.competitors?.offline || 0} offline`;
+    document.getElementById('kpi-articles').textContent = stats.articles?.total || 0;
+    document.getElementById('kpi-avg-delay').textContent = stats.articles?.avgDelayFormatted || '-';
+    document.getElementById('kpi-within-5min').textContent =
+      `${stats.articles?.within5minPct || 0}% within 5min`;
+    document.getElementById('kpi-fastest').textContent = stats.articles?.minDelayFormatted || '-';
+    document.getElementById('kpi-slowest').textContent = stats.articles?.maxDelayFormatted || '-';
+    document.getElementById('kpi-checks').textContent = stats.checks?.total || 0;
+    document.getElementById('kpi-checks-sub').textContent =
+      `${stats.checks?.failed || 0} failed, ${stats.checks?.timeouts || 0} timeouts`;
+    document.getElementById('kpi-workers').textContent = stats.engine?.activeChecks || 0;
+    document.getElementById('kpi-queue').textContent = `Queue: ${stats.engine?.queueDepth || 0}`;
+    document.getElementById('kpi-cpm').textContent = stats.engine?.checksPerMinute || 0;
+    document.getElementById('engine-status').textContent =
+      stats.engine?.running ? 'Engine: Running' : 'Engine: Stopped';
+  } catch (err) {
+    console.error('Failed to load overview:', err);
+  }
+
+  // Load recent articles
+  try {
+    const articles = await api('/articles?limit=10');
+    const tbody = document.getElementById('recent-articles-body');
+    if (articles.length === 0) {
+      tbody.innerHTML = '<tr><td colspan="6" style="text-align:center;color:var(--text-secondary);padding:40px">No articles detected yet</td></tr>';
+    } else {
+      tbody.innerHTML = articles.map(a => `
+        <tr>
+          <td style="font-weight:600">${a.competitor_name || '-'}</td>
+          <td><a href="${a.url}" target="_blank" style="color:var(--accent-light);text-decoration:none">${(a.title || a.url || '').substring(0, 60)}</a></td>
+          <td>${formatDate(a.published_at)}</td>
+          <td>${formatDate(a.first_discovered_at)}</td>
+          <td>${delayBadge(a.delay_flag, a.delay_formatted)}</td>
+          <td><span class="badge badge-analyzing">${a.detection_method || '-'}</span></td>
+        </tr>
+      `).join('');
+    }
+  } catch {}
+}
+
+// ─── Competitors ─────────────────────────────────────────
+async function loadCompetitors() {
+  try {
+    const competitors = await api('/competitors');
+    const tbody = document.getElementById('competitors-body');
+    if (competitors.length === 0) {
+      tbody.innerHTML = '<tr><td colspan="7" style="text-align:center;color:var(--text-secondary);padding:40px">No competitors added yet</td></tr>';
+    } else {
+      tbody.innerHTML = competitors.map(c => {
+        let profile = null;
+        try { profile = JSON.parse(c.monitoring_profile); } catch {}
+        return `
+          <tr>
+            <td>
+              <div style="font-weight:600">${c.name}</div>
+              <div style="font-size:11px;color:var(--text-secondary)">${c.website_url}</div>
+            </td>
+            <td>${statusBadge(c.monitoring_status)}</td>
+            <td><span class="badge badge-analyzing">${profile?.primary || 'pending'}</span></td>
+            <td>${formatDate(c.last_checked_at)}</td>
+            <td>${formatDate(c.next_check_at)}</td>
+            <td>${c.consecutive_failures || 0}</td>
+            <td>
+              <button class="btn btn-sm btn-outline" onclick="toggleCompetitor(${c.id})">${c.enabled ? 'Disable' : 'Enable'}</button>
+              <button class="btn btn-sm btn-outline" onclick="reanalyze(${c.id})">Re-analyze</button>
+              <button class="btn btn-sm btn-danger" onclick="deleteCompetitor(${c.id})">✕</button>
+            </td>
+          </tr>
+        `;
+      }).join('');
+    }
+  } catch {}
+}
+
+// ─── Articles ─────────────────────────────────────────
+async function loadArticles() {
+  try {
+    const method = document.getElementById('filter-method')?.value || '';
+    const over5min = document.getElementById('filter-over5min')?.checked || false;
+    let url = '/articles?limit=100';
+    if (method) url += `&method=${method}`;
+    if (over5min) url += '&over_5min=true';
+    const articles = await api(url);
+    const tbody = document.getElementById('articles-body');
+    if (articles.length === 0) {
+      tbody.innerHTML = '<tr><td colspan="7" style="text-align:center;color:var(--text-secondary);padding:40px">No articles match filters</td></tr>';
+    } else {
+      tbody.innerHTML = articles.map(a => `
+        <tr>
+          <td style="font-weight:600">${a.competitor_name || '-'}</td>
+          <td><a href="${a.url}" target="_blank" style="color:var(--accent-light);text-decoration:none">${(a.title || a.url || '').substring(0, 70)}</a></td>
+          <td>${formatDate(a.published_at)}</td>
+          <td>${formatDate(a.first_discovered_at)}</td>
+          <td>${delayBadge(a.delay_flag, a.delay_formatted)}</td>
+          <td><span class="badge badge-analyzing">${a.detection_method || '-'}</span></td>
+          <td><span class="badge badge-${a.status === 'baseline' ? 'unknown' : 'ok'}">${a.status}</span></td>
+        </tr>
+      `).join('');
+    }
+  } catch {}
+}
+
+// ─── Checks ─────────────────────────────────────────
+async function loadChecks() {
+  try {
+    const checks = await api('/checks?limit=100');
+    const tbody = document.getElementById('checks-body');
+    if (checks.length === 0) {
+      tbody.innerHTML = '<tr><td colspan="9" style="text-align:center;color:var(--text-secondary);padding:40px">No checks recorded yet</td></tr>';
+    } else {
+      tbody.innerHTML = checks.map(c => `
+        <tr>
+          <td>${c.competitor_name || '-'}</td>
+          <td><span class="badge badge-analyzing">${c.strategy}</span></td>
+          <td>${formatDate(c.started_at)}</td>
+          <td>${c.duration_ms}ms</td>
+          <td>${c.http_status || '-'}</td>
+          <td>${statusBadge(c.result === 'success' ? 'online' : c.result === 'not_modified' ? 'analyzing' : 'offline')}</td>
+          <td>${c.items_found}</td>
+          <td style="font-weight:${c.new_items > 0 ? '700;color:var(--success)' : '400'}">${c.new_items}</td>
+          <td style="font-size:11px;color:var(--danger);max-width:200px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${c.error_message || '-'}</td>
+        </tr>
+      `).join('');
+    }
+  } catch {}
+}
+
+// ─── Performance ─────────────────────────────────────────
+async function loadPerformance() {
+  try {
+    const data = await api('/stats/methods');
+
+    const methodBody = document.getElementById('method-stats-body');
+    if (data.articleStats?.length > 0) {
+      methodBody.innerHTML = data.articleStats.map(m => `
+        <tr>
+          <td style="font-weight:600">${m.detection_method || '-'}</td>
+          <td>${m.count || 0}</td>
+          <td>${formatMs(m.avg_delay)}</td>
+          <td>${formatMs(m.min_delay)}</td>
+          <td>${formatMs(m.max_delay)}</td>
+          <td>${m.within5min || 0}</td>
+        </tr>
+      `).join('');
+    } else {
+      methodBody.innerHTML = '<tr><td colspan="6" style="text-align:center;color:var(--text-secondary)">No data yet</td></tr>';
+    }
+
+    const perfBody = document.getElementById('check-perf-body');
+    if (data.checkPerformance?.length > 0) {
+      perfBody.innerHTML = data.checkPerformance.map(m => `
+        <tr>
+          <td style="font-weight:600">${m.strategy || '-'}</td>
+          <td>${m.count || 0}</td>
+          <td>${formatMs(m.avg_duration)}</td>
+          <td>${(m.success_rate || 0).toFixed(1)}%</td>
+        </tr>
+      `).join('');
+    } else {
+      perfBody.innerHTML = '<tr><td colspan="4" style="text-align:center;color:var(--text-secondary)">No data yet</td></tr>';
+    }
+  } catch {}
+}
+
+// ─── Actions ─────────────────────────────────────────
+function showAddModal() { document.getElementById('add-modal').classList.remove('hidden'); }
+function hideAddModal() { document.getElementById('add-modal').classList.add('hidden'); }
+
+async function addCompetitor() {
+  const name = document.getElementById('competitor-name').value.trim();
+  const url = document.getElementById('competitor-url').value.trim();
+  if (!name || !url) { alert('Name and URL are required'); return; }
+
+  try {
+    await api('/competitors', {
+      method: 'POST',
+      body: {
+        name,
+        website_url: url,
+        blog_url: document.getElementById('competitor-blog-url').value.trim() || undefined,
+        feed_url: document.getElementById('competitor-feed-url').value.trim() || undefined,
+      },
+    });
+    hideAddModal();
+    document.getElementById('competitor-name').value = '';
+    document.getElementById('competitor-url').value = '';
+    document.getElementById('competitor-blog-url').value = '';
+    document.getElementById('competitor-feed-url').value = '';
+    showToast('Competitor added! Auto-analyzing...', 'success');
+    loadCompetitors();
+    setTimeout(loadOverview, 2000);
+  } catch (err) {
+    showToast('Failed to add competitor: ' + err.message, 'error');
+  }
+}
+
+async function toggleCompetitor(id) {
+  await api(`/competitors/${id}/toggle`, { method: 'POST' });
+  loadCompetitors();
+}
+
+async function reanalyze(id) {
+  showToast('Re-analyzing...', 'info');
+  await api(`/competitors/${id}/reanalyze`, { method: 'POST' });
+  loadCompetitors();
+  showToast('Analysis complete!', 'success');
+}
+
+async function deleteCompetitor(id) {
+  if (!confirm('Delete this competitor?')) return;
+  await api(`/competitors/${id}`, { method: 'DELETE' });
+  loadCompetitors();
+  loadOverview();
+}
+
+async function saveSettings() {
+  await api('/settings', {
+    method: 'POST',
+    body: {
+      globalConcurrency: document.getElementById('setting-concurrency').value,
+      defaultPollInterval: document.getElementById('setting-interval').value,
+      requestTimeout: document.getElementById('setting-timeout').value,
+      smtpHost: document.getElementById('setting-smtp-host').value,
+    },
+  });
+  showToast('Settings saved', 'success');
+}
+
+// ─── Notifications ─────────────────────────────────────────
+function toggleNotifications() {
+  document.getElementById('notification-panel').classList.toggle('hidden');
+  loadNotifications();
+}
+
+async function loadNotifications() {
+  try {
+    const notifications = await api('/notifications');
+    const countData = await api('/notifications/count');
+    const count = countData.unread || 0;
+    const bellCount = document.getElementById('bell-count');
+    if (count > 0) {
+      bellCount.textContent = count;
+      bellCount.classList.remove('hidden');
+    } else {
+      bellCount.classList.add('hidden');
+    }
+
+    const list = document.getElementById('notification-list');
+    if (notifications.length === 0) {
+      list.innerHTML = '<p style="color:var(--text-secondary);text-align:center">No notifications</p>';
+    } else {
+      list.innerHTML = notifications.slice(0, 20).map(n => `
+        <div style="padding:10px;border-bottom:1px solid rgba(255,255,255,0.03);opacity:${n.is_read ? '0.5' : '1'}">
+          <div style="font-weight:600;font-size:12px">${n.title}</div>
+          <div style="font-size:11px;color:var(--text-secondary);margin-top:2px">${n.message}</div>
+          <div style="font-size:10px;color:var(--text-secondary);margin-top:4px">${formatDate(n.created_at)}</div>
+        </div>
+      `).join('');
+    }
+  } catch {}
+}
+
+async function markAllRead() {
+  await api('/notifications/read-all', { method: 'POST' });
+  loadNotifications();
+}
+
+// ─── Toast ─────────────────────────────────────────
+function showToast(message, type = 'info') {
+  const container = document.getElementById('toast-container');
+  const toast = document.createElement('div');
+  toast.className = 'toast';
+  const icon = type === 'success' ? '✅' : type === 'error' ? '❌' : 'ℹ️';
+  toast.innerHTML = `<span style="font-size:18px">${icon}</span><div style="flex:1"><div style="font-size:13px;font-weight:600">${message}</div></div>`;
+  container.appendChild(toast);
+  setTimeout(() => {
+    toast.style.animation = 'slideOut 0.3s ease forwards';
+    setTimeout(() => toast.remove(), 300);
+  }, 5000);
+}
+
+// ─── SSE ─────────────────────────────────────────
+function setupSSE() {
+  const es = new EventSource('/api/events');
+
+  es.addEventListener('new_article', (e) => {
+    const data = JSON.parse(e.data);
+    const a = data.article;
+    showToast(`New: "${a.title || 'Article'}" from ${a.competitorName} | Delay: ${a.delayFormatted}`, 'success');
+    if (currentTab === 'overview') loadOverview();
+    if (currentTab === 'articles') loadArticles();
+    loadNotifications();
+  });
+
+  es.onerror = () => {
+    setTimeout(setupSSE, 5000);
+  };
+}
+
+// ─── Init ─────────────────────────────────────────
+loadOverview();
+loadNotifications();
+setupSSE();
+
+// Auto-refresh current tab every 10 seconds
+refreshInterval = setInterval(() => {
+  loadTabData(currentTab);
+  loadNotifications();
+}, 10000);
+</script>
+</body>
+</html>

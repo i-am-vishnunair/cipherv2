@@ -1,0 +1,47 @@
+{
+  "name": "cipher-blog-spy",
+  "version": "1.0.0",
+  "description": "Competitor Blog Spy & Real-Time Content Monitoring System",
+  "type": "module",
+  "scripts": {
+    "dev": "tsx src/main.ts",
+    "worker": "tsx src/worker-main.ts",
+    "demo": "tsx src/demo-runner.ts",
+    "demo:publish": "tsx demo-sites/publish-cli.ts",
+    "live": "tsx src/main.ts --live",
+    "loadtest": "tsx loadtest/run.ts",
+    "benchmark": "tsx loadtest/benchmark.ts",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "build": "tsc",
+    "lint": "tsc --noEmit"
+  },
+  "dependencies": {
+    "express": "^4.18.2",
+    "sql.js": "^1.11.0",
+    "axios": "^1.7.2",
+    "fast-xml-parser": "^4.4.1",
+    "cheerio": "^1.0.0",
+    "@mozilla/readability": "^0.5.0",
+    "jsdom": "^24.1.0",
+    "p-queue": "^8.0.1",
+    "nodemailer": "^6.9.14",
+    "pino": "^9.3.2",
+    "pino-pretty": "^11.2.2",
+    "zod": "^3.23.8",
+    "uuid": "^10.0.0",
+    "robots-parser": "^3.0.1",
+    "mime-types": "^2.1.35"
+  },
+  "devDependencies": {
+    "@types/express": "^4.17.21",
+    "@types/jsdom": "^21.1.7",
+    "@types/node": "^20.14.0",
+    "@types/nodemailer": "^6.4.15",
+    "@types/uuid": "^10.0.0",
+    "@types/mime-types": "^2.1.4",
+    "tsx": "^4.16.2",
+    "typescript": "^5.5.3",
+    "vitest": "^2.0.3"
+  }
+}
